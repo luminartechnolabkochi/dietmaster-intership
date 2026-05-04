@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NutriCalc — Daily Calorie Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --sage: #7c9a82;
+      --sage-light: #a8c5ae;
+      --cream: #faf7f2;
+      --warm-white: #f5f0e8;
+      --charcoal: #2c2c2c;
+      --earth: #8b6f47;
+      --earth-light: #c4a882;
+      --accent: #d4654a;
+      --accent-soft: #f2c5b8;
+      --muted: #9a9488;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--cream);
+      color: var(--charcoal);
+      min-height: 100vh;
+    }
+
+    .serif { font-family: 'DM Serif Display', serif; }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid #e0d9ce;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.925rem;
+      color: var(--charcoal);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--sage);
+      box-shadow: 0 0 0 3px rgba(124,154,130,0.15);
+    }
+
+    .input-field::placeholder { color: #bab4a8; }
+
+    select.input-field {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239a9488'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      background-size: 1.2rem;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    .gender-btn {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid #e0d9ce;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.6);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .gender-btn:hover {
+      border-color: var(--sage-light);
+      color: var(--sage);
+    }
+
+    .gender-btn.active {
+      border-color: var(--sage);
+      background: rgba(124,154,130,0.1);
+      color: var(--sage);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--charcoal);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .submit-btn:hover { background: #3f3f3f; transform: translateY(-1px); }
+    .submit-btn:active { transform: translateY(0); }
+
+    .label-text {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+      display: block;
+    }
+
+    .pill-tag {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .day-card {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(224,217,206,0.7);
+      border-radius: 16px;
+      padding: 1.1rem 1.3rem;
+      transition: box-shadow 0.2s;
+    }
+
+    .day-card:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+    }
+
+    .meal-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, #d4cdc2, transparent);
+      margin: 2rem 0;
+    }
+
+    .header-strip {
+      background: var(--charcoal);
+      color: white;
+      padding: 0.55rem 1.2rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .macro-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Animated underline for heading */
+    .animated-underline {
+      position: relative;
+      display: inline-block;
+    }
+    .animated-underline::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-up { animation: fadeUp 0.6s ease both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body class="relative">
+
+  <!-- Background blobs -->
+  <div class="blob w-96 h-96 bg-green-300 top-0 -left-32" style="top:-80px;left:-120px;"></div>
+  <div class="blob w-80 h-80 bg-orange-200" style="top:40%;right:-100px;"></div>
+  <div class="blob w-64 h-64 bg-amber-200" style="bottom:10%;left:10%;"></div>
+
+  <div class="relative z-10 max-w-2xl mx-auto px-4 py-12">
+
+    <!-- Header -->
+    <div class="text-center mb-10 fade-up">
+      <div class="header-strip mx-auto mb-5">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Nutrition Planner
+      </div>
+      <h1 class="serif text-5xl leading-tight mb-3">
+        Daily <span class="animated-underline" style="color:var(--accent)">Calorie</span><br/>Calculator
+      </h1>
+      <p class="text-sm mt-5" style="color:var(--muted)">Enter your details below to get your personalised daily intake goal</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card p-8 fade-up delay-1">
+
+      <!-- Row 1: Height + Weight -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div>
+          <label class="label-text">Height</label>
+          <div class="relative">
+            <input type="number" placeholder="e.g. 170" class="input-field" name="height_in_cm" min="100" max="250"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style="color:var(--muted)">cm</span>
+          </div>
+        </div>
+        <div>
+          <label class="label-text">Weight</label>
+          <div class="relative">
+            <input type="number" placeholder="e.g. 70" class="input-field" name="weight_in_kg" min="20" max="300"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style="color:var(--muted)">kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Age + Gender -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div>
+          <label class="label-text">Age</label>
+          <div class="relative">
+            <input type="number" placeholder="e.g. 28" class="input-field" name="age" min="10" max="100"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style="color:var(--muted)">yrs</span>
+          </div>
+        </div>
+        <div>
+          <label class="label-text">Gender</label>
+          <div class="flex gap-2">
+            <button type="button" class="gender-btn active" data-value="male">
+              <span class="block text-base mb-0.5">♂</span> Male
+            </button>
+            <button type="button" class="gender-btn" data-value="female">
+              <span class="block text-base mb-0.5">♀</span> Female
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Level -->
+      <div class="mb-5">
+        <label class="label-text">Activity Level</label>
+        <select class="input-field" name="activity_level">
+          <option value="" disabled selected>Select your activity level</option>
+          <option value="sedentary">🪑  Sedentary — little or no exercise</option>
+          <option value="light">🚶  Lightly Active — 1–3 days/week</option>
+          <option value="moderate">🏃  Moderately Active — 3–5 days/week</option>
+          <option value="very_active">🏋️  Very Active — 6–7 days/week</option>
+          <option value="extra_active">⚡  Extra Active — physical job + daily training</option>
+        </select>
+      </div>
+
+      <!-- Row 3: Target Weight + Duration -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div>
+          <label class="label-text">Target Weight</label>
+          <div class="relative">
+            <input type="number" placeholder="e.g. 65" class="input-field" name="target_weight" min="20" max="300"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style="color:var(--muted)">kg</span>
+          </div>
+        </div>
+        <div>
+          <label class="label-text">
+            Duration
+            <span class="ml-1 text-xs font-normal normal-case" style="color:var(--earth-light)">(optional)</span>
+          </label>
+          <div class="relative">
+            <input type="number" placeholder="e.g. 3" class="input-field" name="duration_in_months" min="1" max="36"/>
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold" style="color:var(--muted)">mo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info strip -->
+      <div class="flex items-start gap-3 p-4 rounded-xl mb-6" style="background:rgba(124,154,130,0.08);border:1px solid rgba(124,154,130,0.2)">
+        <svg class="mt-0.5 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c9a82" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p class="text-xs leading-relaxed" style="color:#6b8870">
+          Calculations use the <strong>Mifflin-St Jeor equation</strong>. Your results include BMR, TDEE, and a personalised daily target adjusted for your weight goal.
+        </p>
+      </div>
+
+      <button type="button" class="submit-btn">
+        Calculate My Daily Calories →
+      </button>
+    </div>
+
+    <!-- Macro Preview (static sample result) -->
+    <div class="card p-6 mt-5 fade-up delay-2">
+      <p class="label-text mb-4">Estimated Daily Breakdown</p>
+      <div class="grid grid-cols-4 gap-3">
+        <div class="macro-chip" style="background:rgba(212,101,74,0.1);">
+          <span class="text-xl font-bold serif mb-1" style="color:var(--accent)">—</span>
+          <span style="color:var(--muted)">Calories</span>
+        </div>
+        <div class="macro-chip" style="background:rgba(124,154,130,0.1);">
+          <span class="text-xl font-bold serif mb-1" style="color:var(--sage)">—g</span>
+          <span style="color:var(--muted)">Protein</span>
+        </div>
+        <div class="macro-chip" style="background:rgba(139,111,71,0.1);">
+          <span class="text-xl font-bold serif mb-1" style="color:var(--earth)">—g</span>
+          <span style="color:var(--muted)">Carbs</span>
+        </div>
+        <div class="macro-chip" style="background:rgba(196,168,130,0.1);">
+          <span class="text-xl font-bold serif mb-1" style="color:var(--earth-light)">—g</span>
+          <span style="color:var(--muted)">Fats</span>
+        </div>
+      </div>
+      <p class="text-center text-xs mt-4" style="color:var(--muted)">Fill in your details above and calculate to see results</p>
+    </div>
+
+    <!-- Section divider -->
+    <div class="section-divider fade-up delay-3"></div>
+
+    <!-- Weekly Diet Plan -->
+    <div class="fade-up delay-4">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="header-strip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+          7-Day Meal Plan
+        </div>
+      </div>
+      <h2 class="serif text-3xl mt-3 mb-1">Sample Week<br/><em style="color:var(--sage)">Diet Blueprint</em></h2>
+      <p class="text-sm mb-7" style="color:var(--muted)">A balanced template — adjust portions to your calculated calorie target</p>
+
+      <div class="grid gap-3">
+
+        <!-- Day 1 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl" style="color:var(--charcoal)">Monday</span>
+              <span class="pill-tag" style="background:rgba(212,101,74,0.12);color:var(--accent)">Day 1</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,850 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Oats porridge with banana, chia seeds & a drizzle of honey</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Mixed nuts & 1 apple</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Grilled chicken breast with brown rice & steamed broccoli</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Greek yogurt with flaxseeds</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Baked salmon, quinoa & roasted asparagus</div></div>
+          </div>
+        </div>
+
+        <!-- Day 2 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Tuesday</span>
+              <span class="pill-tag" style="background:rgba(124,154,130,0.15);color:var(--sage)">Day 2</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,800 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Whole wheat toast with 2 poached eggs & avocado</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Orange & a handful of almonds</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Lentil soup with whole grain bread & side salad</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Cottage cheese with cucumber slices</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Stir-fried tofu with mixed vegetables & brown rice</div></div>
+          </div>
+        </div>
+
+        <!-- Day 3 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Wednesday</span>
+              <span class="pill-tag" style="background:rgba(139,111,71,0.12);color:var(--earth)">Day 3</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,900 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Smoothie bowl — spinach, mango, protein powder & granola</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Boiled egg & celery sticks with hummus</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Turkey & veggie wrap with whole wheat tortilla</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Banana with 1 tbsp peanut butter</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Grilled prawns, sweet potato mash & green beans</div></div>
+          </div>
+        </div>
+
+        <!-- Day 4 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Thursday</span>
+              <span class="pill-tag" style="background:rgba(212,101,74,0.12);color:var(--accent)">Day 4</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,780 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Idli (3) with sambar & coconut chutney</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Buttermilk & a handful of roasted chickpeas</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Brown rice, dal, sabzi & raita</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Fruit chaat (papaya, pomegranate, guava)</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Chicken curry (light gravy) with 2 rotis & cucumber salad</div></div>
+          </div>
+        </div>
+
+        <!-- Day 5 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Friday</span>
+              <span class="pill-tag" style="background:rgba(124,154,130,0.15);color:var(--sage)">Day 5</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,820 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Multigrain dosa with tomato chutney & a glass of milk</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Sprout salad with lemon & chaat masala</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Egg fried rice (light oil) with mixed veggie stir-fry</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Peanut butter on rye crackers</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Palak paneer with 2 whole wheat rotis & onion salad</div></div>
+          </div>
+        </div>
+
+        <!-- Day 6 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Saturday</span>
+              <span class="pill-tag" style="background:rgba(196,168,130,0.2);color:var(--earth-light)">Day 6</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~2,000 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Whole grain pancakes with mixed berries & maple syrup</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Trail mix (nuts, seeds, dried cranberries)</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Chickpea salad bowl with tahini dressing & pita</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Dark chocolate (70%+) & green tea</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Grilled fish tacos with cabbage slaw & lime crema</div></div>
+          </div>
+        </div>
+
+        <!-- Day 7 -->
+        <div class="day-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="serif text-xl">Sunday</span>
+              <span class="pill-tag" style="background:rgba(212,101,74,0.12);color:var(--accent)">Day 7</span>
+            </div>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#f0ebe3;color:var(--earth)">~1,750 kcal</span>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:var(--accent-soft);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Breakfast · </span>Vegetable upma with coconut chutney & masala chai</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Watermelon slices & mint lemonade</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#e8ddd0;border:1.5px solid var(--earth)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Lunch · </span>Rajma chawal with pickle & onion rings</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:#d4edd8;border:1.5px solid var(--sage)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Snack · </span>Roasted makhana with a cup of herbal tea</div></div>
+            <div class="flex gap-2"><div class="meal-dot mt-1.5" style="background:rgba(212,101,74,0.15);border:1.5px solid var(--accent)"></div><div><span class="font-semibold text-xs uppercase tracking-wide" style="color:var(--muted)">Dinner · </span>Mixed vegetable soup & whole wheat garlic bread</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer note -->
+      <div class="mt-6 p-4 rounded-xl flex gap-3 items-start" style="background:rgba(139,111,71,0.07);border:1px solid rgba(139,111,71,0.15)">
+        <svg class="mt-0.5 flex-shrink-0" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8b6f47" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <p class="text-xs leading-relaxed" style="color:#7a6040">
+          <strong>Note:</strong> This plan is a general template. Adjust portion sizes based on your personalised calorie target. Stay hydrated with 8–10 glasses of water daily. Consult a registered dietitian for a medically tailored plan.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-xs mt-10 pb-6" style="color:#c5bfb7">NutriCalc · Powered by Mifflin-St Jeor · For informational purposes only</p>
+
+  </div>
+
+  <script>
+    // Gender toggle (UI only — no calculation)
+    const genderBtns = document.querySelectorAll('.gender-btn');
+    genderBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        genderBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
